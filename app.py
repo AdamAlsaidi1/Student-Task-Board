@@ -10,6 +10,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for all API ro
 # File to store tasks
 TASKS_FILE = 'tasks.json'
 
+
 def load_tasks():
     """Load tasks from JSON file"""
     if os.path.exists(TASKS_FILE):
@@ -20,10 +21,15 @@ def load_tasks():
             return []
     return []
 
+
 def save_tasks(tasks):
     """Save tasks to JSON file"""
-    with open(TASKS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(tasks, f, indent=2, ensure_ascii=False)
+    try:
+        with open(TASKS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(tasks, f, indent=2, ensure_ascii=False)
+    except IOError as e:
+        print(f"Error saving tasks: {e}")
+        raise
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
@@ -34,51 +40,59 @@ def get_tasks():
 @app.route('/api/tasks', methods=['POST'])
 def create_task():
     """Create a new task"""
-    data = request.get_json()
-    
-    # Validate input
-    if not data or 'text' not in data:
-        return jsonify({'error': 'Task text is required'}), 400
-    
-    task_text = data['text'].strip()
-    
-    if not task_text:
-        return jsonify({'error': 'Task cannot be empty'}), 400
-    
-    if len(task_text) > 200:
-        return jsonify({'error': 'Task is too long. Maximum 200 characters allowed'}), 400
-    
-    # Load existing tasks
-    tasks = load_tasks()
-    
-    # Create new task
-    new_task = {
-        'id': int(datetime.now().timestamp() * 1000),  # Use timestamp as ID
-        'text': task_text,
-        'createdAt': datetime.now().isoformat()
-    }
-    
-    tasks.append(new_task)
-    save_tasks(tasks)
-    
-    return jsonify(new_task), 201
+    try:
+        data = request.get_json()
+        
+        # Validate input
+        if not data or 'text' not in data:
+            return jsonify({'error': 'Task text is required'}), 400
+        
+        task_text = data['text'].strip()
+        
+        if not task_text:
+            return jsonify({'error': 'Task cannot be empty'}), 400
+        
+        if len(task_text) > 200:
+            return jsonify({'error': 'Task is too long. Maximum 200 characters allowed'}), 400
+        
+        # Load existing tasks
+        tasks = load_tasks()
+        
+        # Create new task
+        new_task = {
+            'id': int(datetime.now().timestamp() * 1000),  # Use timestamp as ID
+            'text': task_text,
+            'createdAt': datetime.now().isoformat()
+        }
+        
+        tasks.append(new_task)
+        save_tasks(tasks)
+        
+        return jsonify(new_task), 201
+    except Exception as e:
+        print(f"Error creating task: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     """Delete a task by ID"""
-    tasks = load_tasks()
-    
-    # Find and remove task
-    original_length = len(tasks)
-    tasks = [task for task in tasks if task['id'] != task_id]
-    
-    if len(tasks) == original_length:
-        return jsonify({'error': 'Task not found'}), 404
-    
-    save_tasks(tasks)
-    return jsonify({'message': 'Task deleted successfully'}), 200
+    try:
+        tasks = load_tasks()
+        
+        # Find and remove task
+        original_length = len(tasks)
+        tasks = [task for task in tasks if task['id'] != task_id]
+        
+        if len(tasks) == original_length:
+            return jsonify({'error': 'Task not found'}), 404
+        
+        save_tasks(tasks)
+        return jsonify({'message': 'Task deleted successfully'}), 200
+    except Exception as e:
+        print(f"Error deleting task: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/tasks', methods=['DELETE'])
+@app.route('/api/tasks/clear', methods=['DELETE'])
 def delete_all_tasks():
     """Delete all tasks"""
     save_tasks([])
@@ -94,7 +108,19 @@ if __name__ == '__main__':
     if not os.path.exists(TASKS_FILE):
         save_tasks([])
     
-    print("Starting Student Task Board API server...")
-    print("API will be available at: http://localhost:5001")
-    print("Frontend should be served separately or use Flask to serve static files")
-    app.run(debug=True, port=5001, host='127.0.0.1')
+    print("=" * 50)
+    print("🚀 Starting Student Task Board API server...")
+    print("=" * 50)
+    print("📍 API will be available at: http://localhost:5001")
+    print("🌐 Frontend should be served separately")
+    print("💡 Server will keep running until stopped (Ctrl+C)")
+    print("=" * 50)
+    print("")
+    
+    try:
+        app.run(debug=False, port=5001, host='127.0.0.1', use_reloader=False)
+    except KeyboardInterrupt:
+        print("\n\n🛑 Server stopped by user")
+    except Exception as e:
+        print(f"\n❌ Server error: {e}")
+        print("🔄 Please restart the server")

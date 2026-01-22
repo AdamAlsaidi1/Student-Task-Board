@@ -11,7 +11,26 @@ Beginner-friendly mini project to learn Git & GitHub collaboration: cloning repo
 - ✅ RESTful API backend
 - ✅ Modern, responsive UI
 
-## Setup Instructions
+## Quick Start (Easiest Way)
+
+### macOS/Linux:
+```bash
+./start.sh
+```
+
+### Windows:
+```bash
+start.bat
+```
+
+This will automatically:
+- ✅ Activate virtual environment
+- ✅ Install dependencies (if needed)
+- ✅ Start backend server on port 5001
+- ✅ Start frontend server on port 8000
+- ✅ Open your browser
+
+## Manual Setup Instructions
 
 ### Prerequisites
 
@@ -42,7 +61,6 @@ Beginner-friendly mini project to learn Git & GitHub collaboration: cloning repo
 ### Frontend Setup
 
 1. **Open the frontend**:
-   - Simply open `index.html` in your web browser, or
    - Use a local web server (recommended):
      ```bash
      # Python 3
@@ -56,7 +74,7 @@ Beginner-friendly mini project to learn Git & GitHub collaboration: cloning repo
 - `GET /api/tasks` - Get all tasks
 - `POST /api/tasks` - Create a new task
 - `DELETE /api/tasks/<id>` - Delete a specific task
-- `DELETE /api/tasks` - Delete all tasks
+- `DELETE /api/tasks/clear` - Delete all tasks
 - `GET /api/health` - Health check
 
 ## Project Structure
@@ -68,6 +86,8 @@ Student-Task-Board/
 ├── script.js           # Frontend JavaScript (API integration)
 ├── styles.css          # Frontend styling
 ├── requirements.txt    # Python dependencies
+├── start.sh            # Start script (macOS/Linux)
+├── start.bat           # Start script (Windows)
 ├── tasks.json          # Data storage (auto-created)
 └── venv/               # Python virtual environment
 ```
