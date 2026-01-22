@@ -1,24 +1,29 @@
 // Student Task Board - Frontend JavaScript
 
-// Initialize tasks from localStorage on page load
+// API Configuration
+const API_BASE_URL = 'http://localhost:5001/api';
+
+// Initialize tasks array
 let tasks = [];
 
-// Load tasks from localStorage when page loads
-function loadTasks() {
-    const savedTasks = localStorage.getItem('studentTasks');
-    if (savedTasks) {
-        tasks = JSON.parse(savedTasks);
-        displayTasks();
+// Load tasks from API when page loads
+async function loadTasks() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/tasks`);
+        if (response.ok) {
+            tasks = await response.json();
+            displayTasks();
+        } else {
+            showError('Failed to load tasks from server');
+        }
+    } catch (error) {
+        console.error('Error loading tasks:', error);
+        showError('Cannot connect to server. Make sure the backend is running on http://localhost:5000');
     }
 }
 
-// Save tasks to localStorage
-function saveTasks() {
-    localStorage.setItem('studentTasks', JSON.stringify(tasks));
-}
-
 // Add a new task
-function addTask() {
+async function addTask() {
     const taskInput = document.getElementById('taskInput');
     const errorMessage = document.getElementById('errorMessage');
     const taskText = taskInput.value.trim();
@@ -29,43 +34,53 @@ function addTask() {
 
     // Validate input
     if (taskText === '') {
-        errorMessage.textContent = 'Error: Task cannot be empty. Please enter a task.';
-        errorMessage.classList.add('show');
+        showError('Error: Task cannot be empty. Please enter a task.');
         taskInput.focus();
         return;
     }
 
     if (taskText.length > 200) {
-        errorMessage.textContent = 'Error: Task is too long. Maximum 200 characters allowed.';
-        errorMessage.classList.add('show');
+        showError('Error: Task is too long. Maximum 200 characters allowed.');
         taskInput.focus();
         return;
     }
 
-    // Add task to array
-    const newTask = {
-        id: Date.now(), // Simple ID generation using timestamp
-        text: taskText,
-        createdAt: new Date().toISOString()
-    };
+    try {
+        // Send POST request to API
+        const response = await fetch(`${API_BASE_URL}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: taskText })
+        });
 
-    tasks.push(newTask);
-    saveTasks();
-    displayTasks();
+        if (response.ok) {
+            const newTask = await response.json();
+            tasks.push(newTask);
+            displayTasks();
 
-    // Clear input and show success feedback
-    taskInput.value = '';
-    taskInput.focus();
+            // Clear input and show success feedback
+            taskInput.value = '';
+            taskInput.focus();
 
-    // Show success message briefly
-    errorMessage.textContent = `✓ Task added successfully: ${taskText}`;
-    errorMessage.style.color = '#28a745';
-    errorMessage.classList.add('show');
-    
-    setTimeout(() => {
-        errorMessage.classList.remove('show');
-        errorMessage.style.color = '#dc3545';
-    }, 2000);
+            // Show success message briefly
+            errorMessage.textContent = `✓ Task added successfully: ${taskText}`;
+            errorMessage.style.color = '#28a745';
+            errorMessage.classList.add('show');
+            
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+                errorMessage.style.color = '#dc3545';
+            }, 2000);
+        } else {
+            const errorData = await response.json();
+            showError(`Error: ${errorData.error || 'Failed to add task'}`);
+        }
+    } catch (error) {
+        console.error('Error adding task:', error);
+        showError('Cannot connect to server. Make sure the backend is running.');
+    }
 }
 
 // Display all tasks
@@ -109,26 +124,60 @@ function displayTasks() {
 }
 
 // Delete a task
-function deleteTask(taskId) {
+async function deleteTask(taskId) {
     if (confirm('Are you sure you want to delete this task?')) {
-        tasks = tasks.filter(task => task.id !== taskId);
-        saveTasks();
-        displayTasks();
+        try {
+            const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                tasks = tasks.filter(task => task.id !== taskId);
+                displayTasks();
+            } else {
+                const errorData = await response.json();
+                alert(`Error: ${errorData.error || 'Failed to delete task'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            alert('Cannot connect to server. Make sure the backend is running.');
+        }
     }
 }
 
 // Clear all tasks
-function clearAllTasks() {
+async function clearAllTasks() {
     if (tasks.length === 0) {
         alert('No tasks to clear!');
         return;
     }
 
     if (confirm('Are you sure you want to delete all tasks? This action cannot be undone.')) {
-        tasks = [];
-        saveTasks();
-        displayTasks();
+        try {
+            const response = await fetch(`${API_BASE_URL}/tasks`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                tasks = [];
+                displayTasks();
+            } else {
+                const errorData = await response.json();
+                alert(`Error: ${errorData.error || 'Failed to clear tasks'}`);
+            }
+        } catch (error) {
+            console.error('Error clearing tasks:', error);
+            alert('Cannot connect to server. Make sure the backend is running.');
+        }
     }
+}
+
+// Helper function to show error messages
+function showError(message) {
+    const errorMessage = document.getElementById('errorMessage');
+    errorMessage.textContent = message;
+    errorMessage.style.color = '#dc3545';
+    errorMessage.classList.add('show');
 }
 
 // Allow adding task with Enter key
